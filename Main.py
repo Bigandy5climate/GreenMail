@@ -1,7 +1,26 @@
+from distutils.file_util import write_file
+import encodings
 import mailparser
+from bs4 import BeautifulSoup
 
 mail = mailparser.parse_from_file('f copy.eml')
 body = mail.body
-bodyEnd = body.find('</html>=')+7
-cleanBody = body[:bodyEnd]
-print(bodyEnd)
+body = body.split('</html>')[0]+'</html>'
+with open('body.html', 'w', encoding='utf-8') as f:
+    f.write('<!DOCTYPE html>\n')
+    f.write(body)
+    html = f
+    soup = BeautifulSoup(html, features="html.parser")
+    # kill all script and style elements
+    for script in soup(["script", "style"]):
+        script.extract()    # rip it out
+    #  get text
+    text = soup.get_text()
+    # break into lines and remove leading and trailing space on each
+    lines = (line.strip() for line in text.splitlines())
+    # break multi-headlines into a line each
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    # drop blank lines
+    text = '\n'.join(chunk for chunk in chunks if chunk)
+
+    print(text)
